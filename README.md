@@ -1,4 +1,4 @@
-# Readme
+# Documentation for assignment 2 a.k.a. mid-term
 
 **Author:** Imashev Olzhas
 
