@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS blenders (
     name text NOT NULL,
     year integer NOT NULL,
     capacity integer NOT NULL,
-    material text NOT NULL,
+    material text,
     categories text[] NOT NULL,
     version integer NOT NULL DEFAULT 1
 );
