@@ -137,7 +137,7 @@ func (app *application) updateBlenderHandler(w http.ResponseWriter, r *http.Requ
 		}
 		return
 	}
-	
+
 	err = app.writeJSON(w, http.StatusOK, envelope{"blender": blender}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -168,3 +168,39 @@ func (app *application) deleteBlenderHandler(w http.ResponseWriter, r *http.Requ
 	}
 }
 	
+func (app *application) listBlendersHandler(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Name string
+		Categories []string
+		data.Filters
+	}
+
+	v := validator.New()
+
+	qs := r.URL.Query()
+
+	input.Name = app.readString(qs, "name", "")
+	input.Categories = app.readCSV(qs, "categories", []string{})
+
+	input.Filters.Page = app.readInt(qs, "page", 1, v)
+	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+
+	input.Filters.Sort = app.readString(qs, "sort", "id")
+	input.Filters.SortSafelist = []string{"id", "name", "year", "capacity", "-id", "-name", "-year", "-capacity"}
+
+	if data.ValidateFilters(v, input.Filters); !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}		
+	
+	blenders, metadata, err := app.models.Blenders.GetAll(input.Name, input.Categories, input.Filters)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"blenders": blenders, "metadata": metadata}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql" 
 	"errors"
+	"fmt"
 	"time"
 
 	"greenlight.alexedwards.net/internal/validator" 
@@ -156,3 +157,57 @@ func ValidateBlender(v *validator.Validator, blender *Blender) {
 	v.Check(len(blender.Categories) <= 5, "categories", "must not contain more than 5 categories")
 	v.Check(validator.Unique(blender.Categories), "categories", "must not contain duplicate values")
 }
+
+func (m BlenderModel) GetAll(name string, categories []string, filters Filters) ([]*Blender, Metadata, error) {
+	query := fmt.Sprintf(`
+		SELECT count(*) OVER(), id, created_at, name, year, capacity, categories, version
+		FROM blenders
+		WHERE (to_tsvector('simple', name) @@ plainto_tsquery('simple', $1) OR $1 = '')
+		AND (categories @> $2 OR $2 = '{}')
+		ORDER BY %s %s, id ASC
+		LIMIT $3 OFFSET $4`, filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	args := []interface{}{name, pq.Array(categories), filters.limit(), filters.offset()}
+
+	rows, err := m.DB.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+
+	defer rows.Close()
+
+	totalRecords := 0
+	blenders := []*Blender{}
+
+	for rows.Next() {
+		var blender Blender
+
+		err := rows.Scan(
+			&totalRecords,
+			&blender.ID,
+			&blender.CreatedAt,
+			&blender.Name,
+			&blender.Year,
+			&blender.Capacity,
+			pq.Array(&blender.Categories),
+			&blender.Version,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+		
+		blenders = append(blenders, &blender)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+	return blenders, metadata, nil
+}
+	
