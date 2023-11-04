@@ -19,5 +19,5 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPatch, "/v1/blenders/:id", app.updateBlenderHandler)
 	router.HandlerFunc(http.MethodDelete, "/v1/blenders/:id", app.deleteBlenderHandler)
 
-	return app.recoverPanic(router)
+	return app.recoverPanic(app.rateLimit(router))
 }
