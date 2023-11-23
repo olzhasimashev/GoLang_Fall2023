@@ -13,11 +13,11 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodGet, "/v1/healthcheck", app.healthcheckHandler)
 
-	router.HandlerFunc(http.MethodGet, "/v1/blenders", app.listBlendersHandler)
-	router.HandlerFunc(http.MethodPost, "/v1/blenders", app.createBlenderHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/blenders/:id", app.showBlenderHandler)
-	router.HandlerFunc(http.MethodPatch, "/v1/blenders/:id", app.updateBlenderHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/blenders/:id", app.deleteBlenderHandler)
+	router.HandlerFunc(http.MethodGet, "/v1/blenders", app.requirePermission("blenders:read", app.listBlendersHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/blenders", app.requirePermission("blenders:write", app.createBlenderHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/blenders/:id", app.requirePermission("blenders:read", app.showBlenderHandler))
+	router.HandlerFunc(http.MethodPatch, "/v1/blenders/:id", app.requirePermission("blenders:write", app.updateBlenderHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/blenders/:id", app.requirePermission("blenders:write", app.deleteBlenderHandler))
 
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
