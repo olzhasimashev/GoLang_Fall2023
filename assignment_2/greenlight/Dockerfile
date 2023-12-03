@@ -14,6 +14,10 @@ RUN go get -v -u github.com/golang-migrate/migrate/v4
 # https://docs.docker.com/engine/reference/builder/#copy
 COPY . ./
 
+# Copy the wait-for-it script
+COPY scripts/wait-for-it.sh /wait-for-it.sh
+RUN chmod +x /wait-for-it.sh
+
 # Build
 RUN go build -o main ./cmd/api/ && chmod +x bin
 

@@ -30,6 +30,7 @@ services:
       - db
     networks:
       - backend
+    command: ["/wait-for-it.sh", "db:5432", "--", "./main"]
 
 
 
